@@ -6,12 +6,13 @@ import {
   getTodayKey,
   calculateTotals,
 } from './utils/storage';
-import { FlowStorageState, PeriodView } from './types';
+import { FlowStorageState, PeriodView, DailyInsight } from './types';
 import { Sidebar } from './components/Sidebar';
 import { TopHeader } from './components/TopHeader';
 import { CalorieAndMacroHero } from './components/CalorieAndMacroHero';
 import { WeeklyChartCard } from './components/WeeklyChartCard';
 import { CalendarCard } from './components/CalendarCard';
+import { AiInsightsCard } from './components/AiInsightsCard';
 
 export default function App() {
   const [state, setState] = useState<FlowStorageState>(() => loadFlowState());
@@ -20,6 +21,7 @@ export default function App() {
   const [activeNav, setActiveNav] = useState<string>('Dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState<boolean>(false);
+  const [stagedMealQuery, setStagedMealQuery] = useState<string>('');
 
   // Persist state changes to localStorage
   useEffect(() => {
@@ -41,8 +43,22 @@ export default function App() {
     setSelectedDate(getTodayKey());
   };
 
+  const handleSaveInsight = (date: string, insight: DailyInsight) => {
+    setState((prev) => ({
+      ...prev,
+      insightsByDate: {
+        ...prev.insightsByDate,
+        [date]: insight,
+      },
+    }));
+  };
+
+  const handleStageMeal = (mealText: string) => {
+    setStagedMealQuery(mealText);
+  };
+
   const handleQuickLog = (query: string) => {
-    console.log('Quick log submitted:', query);
+    setStagedMealQuery(query);
   };
 
   return (
@@ -101,6 +117,18 @@ export default function App() {
             />
           </div>
         </div>
+
+        {/* Row 3: AI Daily Insights Coaching Card */}
+        <AiInsightsCard
+          insight={state.insightsByDate[selectedDate]}
+          totals={currentTotals}
+          targets={state.targets}
+          profile={state.profile}
+          meals={currentDayMeals}
+          selectedDate={selectedDate}
+          onSaveInsight={handleSaveInsight}
+          onStageSuggestedMeal={handleStageMeal}
+        />
       </div>
     </div>
   );
