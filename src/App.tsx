@@ -10,6 +10,8 @@ import { FlowStorageState, PeriodView } from './types';
 import { Sidebar } from './components/Sidebar';
 import { TopHeader } from './components/TopHeader';
 import { CalorieAndMacroHero } from './components/CalorieAndMacroHero';
+import { WeeklyChartCard } from './components/WeeklyChartCard';
+import { CalendarCard } from './components/CalendarCard';
 
 export default function App() {
   const [state, setState] = useState<FlowStorageState>(() => loadFlowState());
@@ -71,13 +73,34 @@ export default function App() {
           onQuickLogSubmit={handleQuickLog}
         />
 
-        {/* Top 4 KPI Cards: Dark Hero Calorie + 3 White Macro Cards */}
+        {/* Row 1: Top 4 KPI Cards */}
         <CalorieAndMacroHero
           totals={currentTotals}
           targets={state.targets}
           profile={state.profile}
           onOpenGoalsModal={() => setIsGoalsModalOpen(true)}
         />
+
+        {/* Row 2: Middle Split (60% Weekly Bar Chart + 40% Mini Calendar & Adherence Ring) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 mb-6">
+          <div className="lg:col-span-7 xl:col-span-8">
+            <WeeklyChartCard
+              logsByDate={state.logsByDate}
+              targetCalories={state.targets.calories}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+            />
+          </div>
+
+          <div className="lg:col-span-5 xl:col-span-4">
+            <CalendarCard
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              totals={currentTotals}
+              targets={state.targets}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
