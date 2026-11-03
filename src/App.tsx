@@ -6,13 +6,22 @@ import {
   getTodayKey,
   calculateTotals,
 } from './utils/storage';
-import { FlowStorageState, PeriodView, DailyInsight } from './types';
+import {
+  FlowStorageState,
+  PeriodView,
+  DailyInsight,
+  FoodItem,
+  QuickFoodTemplate,
+  MealCategory,
+} from './types';
 import { Sidebar } from './components/Sidebar';
 import { TopHeader } from './components/TopHeader';
 import { CalorieAndMacroHero } from './components/CalorieAndMacroHero';
 import { WeeklyChartCard } from './components/WeeklyChartCard';
 import { CalendarCard } from './components/CalendarCard';
 import { AiInsightsCard } from './components/AiInsightsCard';
+import { NaturalLanguageLogger } from './components/NaturalLanguageLogger';
+import { MealGroupsSection } from './components/MealGroupsSection';
 
 export default function App() {
   const [state, setState] = useState<FlowStorageState>(() => loadFlowState());
@@ -57,8 +66,73 @@ export default function App() {
     setStagedMealQuery(mealText);
   };
 
-  const handleQuickLog = (query: string) => {
-    setStagedMealQuery(query);
+  const handleCommitItems = (newItems: FoodItem[]) => {
+    setState((prev) => {
+      const existing = prev.logsByDate[selectedDate] || [];
+      return {
+        ...prev,
+        logsByDate: {
+          ...prev.logsByDate,
+          [selectedDate]: [...existing, ...newItems],
+        },
+      };
+    });
+  };
+
+  const handleLogQuickFood = (template: QuickFoodTemplate, mealGroup: MealCategory) => {
+    const newItem: FoodItem = {
+      id: `qf-log-${Date.now()}`,
+      mealGroup,
+      name: template.name,
+      portion: template.portion,
+      calories: template.calories,
+      protein: template.protein,
+      carbs: template.carbs,
+      fat: template.fat,
+      timestamp: Date.now(),
+    };
+
+    setState((prev) => {
+      const existingMeals = prev.logsByDate[selectedDate] || [];
+      const updatedQuickFoods = prev.quickFoods.map((q) =>
+        q.id === template.id ? { ...q, count: q.count + 1, lastLogged: Date.now() } : q
+      );
+
+      return {
+        ...prev,
+        logsByDate: {
+          ...prev.logsByDate,
+          [selectedDate]: [...existingMeals, newItem],
+        },
+        quickFoods: updatedQuickFoods,
+      };
+    });
+  };
+
+  const handleDeleteItem = (id: string) => {
+    setState((prev) => {
+      const existing = prev.logsByDate[selectedDate] || [];
+      return {
+        ...prev,
+        logsByDate: {
+          ...prev.logsByDate,
+          [selectedDate]: existing.filter((item) => item.id !== id),
+        },
+      };
+    });
+  };
+
+  const handleUpdateItem = (updated: FoodItem) => {
+    setState((prev) => {
+      const existing = prev.logsByDate[selectedDate] || [];
+      return {
+        ...prev,
+        logsByDate: {
+          ...prev.logsByDate,
+          [selectedDate]: existing.map((item) => (item.id === updated.id ? updated : item)),
+        },
+      };
+    });
   };
 
   return (
@@ -86,7 +160,7 @@ export default function App() {
           onOpenGoalsModal={() => setIsGoalsModalOpen(true)}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           profile={state.profile}
-          onQuickLogSubmit={handleQuickLog}
+          onQuickLogSubmit={handleStageMeal}
         />
 
         {/* Row 1: Top 4 KPI Cards */}
@@ -128,6 +202,23 @@ export default function App() {
           selectedDate={selectedDate}
           onSaveInsight={handleSaveInsight}
           onStageSuggestedMeal={handleStageMeal}
+        />
+
+        {/* Row 4: AI Natural-Language Meal Logger */}
+        <NaturalLanguageLogger
+          onCommitItems={handleCommitItems}
+          quickFoods={state.quickFoods}
+          onLogQuickFood={handleLogQuickFood}
+          externalQuery={stagedMealQuery}
+          onClearExternalQuery={() => setStagedMealQuery('')}
+        />
+
+        {/* Row 5: Grouped Daily Meals Table (Mockup Bottom Table) */}
+        <MealGroupsSection
+          items={currentDayMeals}
+          onDeleteItem={handleDeleteItem}
+          onUpdateItem={handleUpdateItem}
+          selectedDate={selectedDate}
         />
       </div>
     </div>
