@@ -1,80 +1,93 @@
-# Flow — Developer Architecture & Migration Guide (`migration.md`)
+# Fiova — Developer Architecture & Migration Guide (`migration.md`)
 
-This document serves as the comprehensive technical handoff for **Flow — Liquid Glass AI Calorie Tracker**. It outlines the project directory structure, details the current state of every feature, and provides step-by-step instructions for extending the state management system and building new UI sections that adhere strictly to Flow’s iOS 26 Liquid Glass design language.
+This document serves as the comprehensive technical handoff and developer reference for **Fiova — AI Calorie Tracker & Nutrition Intelligence**. It documents the complete project structure, the current state of every feature, the new **Soft-Clay / Slate Dashboard design system**, state management contracts, and guidelines for extending the codebase.
 
 ---
 
 ## 1. Project Structure
 
-Flow is a full-stack TypeScript application combining a **React 19 + Vite 8 + Tailwind CSS v4** frontend with an **Express + `@google/genai`** server.
+Fiova is a full-stack TypeScript application combining a **React 19 + Vite 6 + Tailwind CSS v4** frontend with an **Express + `@google/genai` (Gemini 3.8 Flash)** server.
 
 ```text
-├── .env.example                        # Environment variable template (GEMINI_API_KEY, APP_URL)
+├── .env.example                        # Environment variable template (GEMINI_API_KEY, PORT)
+├── .gitignore                          # Git ignore rules for node_modules, build outputs, and env secrets
 ├── index.html                          # HTML entry point loading Plus Jakarta Sans & JetBrains Mono
-├── metadata.json                       # AI Studio applet metadata & capabilities
-├── migration.md                        # Developer architecture, feature state & extension guide
-├── package.json                        # Scripts (dev, build, start, lint) and dependencies
-├── server.ts                           # Express backend + Gemini 3.8 Flash API routes + Vite middleware
-├── tsconfig.json                       # TypeScript compiler configuration
+├── migration.md                        # Architecture, feature states & extension guide
+├── package.json                        # Dependencies, scripts (dev, build, preview, start)
+├── README.md                           # Repository documentation, setup instructions & API reference
+├── server.ts                           # Express backend + Gemini 3.8 Flash API routes + Vite dev middleware
+├── tsconfig.json                       # Strict TypeScript compiler configuration
 ├── vite.config.ts                      # Vite bundler configuration with React & Tailwind v4 plugins
 └── src/
     ├── main.tsx                        # React application root mount
-    ├── App.tsx                         # Root controller, date navigation bar, and state orchestrator
-    ├── index.css                       # iOS 26 Liquid Glass utility classes & ambient blob animations
-    ├── types.ts                        # Core TypeScript domain & persistence interfaces
+    ├── App.tsx                         # Root controller, state orchestrator & responsive layout
+    ├── index.css                       # Modern soft-slate clay design tokens & card utility classes
+    ├── types.ts                        # Core TypeScript domain models & persistence interfaces
     ├── utils/
-    │   └── storage.ts                  # localStorage persistence, date math, seed history & fallback BMR math
+    │   └── storage.ts                  # LocalStorage persistence, date math, seed history & Mifflin-St Jeor engine
     └── components/
-        ├── OnboardingModal.tsx         # Glass onboarding modal & AI nutrition target calculator
-        ├── CalorieAndMacroHero.tsx     # Animated SVG calorie ring & 3 spring-animated macro progress bars
-        ├── NaturalLanguageLogger.tsx   # Plain-language meal input, quick-add chips & confirmation card
-        ├── AiInsightsCard.tsx          # Gemini daily progress summary & next-meal suggestion card
-        ├── MealGroupsSection.tsx       # Breakfast, Lunch, Dinner & Snacks cards with inline item editing
-        └── WeeklyViewSection.tsx       # 7-day smooth SVG calorie trend chart & average macro split
+        ├── Sidebar.tsx                 # Navigation links, Fiova branding & recalibrate targets card
+        ├── TopHeader.tsx               # AI search quick-log bar, period switcher pills & date range
+        ├── CalorieAndMacroHero.tsx     # Signature dark hero calorie card & 3 animated white macro cards
+        ├── WeeklyChartCard.tsx         # 7-day pill-bar calorie trend chart with target reference line
+        ├── CalendarCard.tsx            # Mini weekly calendar strip & circular goal adherence gauge
+        ├── AiInsightsCard.tsx          # Gemini daily progress summary & one-tap meal staging well
+        ├── NaturalLanguageLogger.tsx   # Plain-English meal input, category tabs, quick chips & review card
+        ├── MealGroupsSection.tsx       # Daily logged meals table with inline editing, macros & status badge
+        └── OnboardingModal.tsx         # Profile modal with live Metric/Imperial conversions & AI recalibration
 ```
 
 ---
 
 ## 2. Current State of Application Features
 
-### 2.1. Glass Onboarding & Personalized Target Calculation (`OnboardingModal.tsx`)
-- **Trigger**: Automatically opens on first launch (`!state.onboarded`) or manually via the **Goals & Profile** button in the top navigation bar and the **Adjust Targets** button in the hero card.
-- **Inputs**: Collects `age`, `gender` (`female` | `male` | `non-binary`), `heightCm` (with live Metric `cm` / Imperial `ft + in` conversion), `weightKg` (with live `kg` / `lbs` conversion), `activityLevel` (`sedentary` to `very_active`), and `goal` (`lose_weight` | `maintain` | `gain_muscle`).
-- **AI Target Calculation**: Sends the profile payload to `POST /api/calculate-targets`, where `gemini-3.8-flash` calculates daily `calories`, `protein`, `carbs`, and `fat` targets alongside a concise `explanation`.
-- **Resilience & Editability**: Displays frosted shimmer skeletons during generation, provides a retry action plus an offline Mifflin-St Jeor formula fallback (`calculateLocalFallbackTargets`), and lets users manually edit every target value (including a one-click **Sync Calories to Macros** helper) before saving.
+### 2.1. Soft-Slate Dashboard Layout & Navigation (`Sidebar.tsx`, `TopHeader.tsx`, `App.tsx`)
+- **Left Sidebar**: Displays the Fiova flame brand logo, active pill navigation for **Dashboard**, **Meal Log**, **AI Coach**, and **Analytics**, a dark graphite **Target Calibrated** card with a direct **Recalibrate Targets** action, and a mobile sliding drawer.
+- **Top Header**: Features an omnipresent AI quick-log search bar (`Log: '2 eggs and toast' or ask AI...`), segmented period switcher pills (`Day`, `Week`, `Month`, `Year`) with charcoal highlighting, a calendar date indicator pill, a notification bell, and the user profile avatar.
 
-### 2.2. Dashboard with Calorie Ring & Macro Tracking (`CalorieAndMacroHero.tsx`)
-- **Animated Calorie Ring**: A multi-layered SVG circular gauge with spring physics (`motion.circle`), specular inner track highlights, and drop-shadow glow. Displays calories eaten, daily calorie target, remaining (or exceeded) calories, and percentage completion. Automatically shifts its gradient from sky/indigo/violet to rose/crimson if the daily calorie target is exceeded.
-- **Animated Macro Bars**: Three horizontal liquid glass progress bars for **Protein**, **Carbohydrates**, and **Dietary Fat**, each animated via `motion.div` spring physics and displaying grams eaten, target grams, percentage, and grams remaining using `tabular-nums`.
+### 2.2. Top Metric Cards (`CalorieAndMacroHero.tsx`)
+- **Signature Dark Hero Card**: Standout dark graphite pill card (`#18181B`) showing calories eaten vs. daily target (`1,170 / 2,200 kcal`), remaining countdown (`980 kcal remaining`), spring-animated micro progress bar, and over-budget alert states.
+- **3 Crisp White Macro Cards**: High-contrast white pill cards for **Protein**, **Carbohydrates**, and **Dietary Fat** with spring-loaded progress bars, tabular gram counts, percentage badges, and physiological context labels (*Muscle repair*, *Daily energy*, *Hormonal health*).
 
-### 2.3. Natural-Language Meal Logging & Quick-Add Chips (`NaturalLanguageLogger.tsx`)
-- **Meal Category Selector**: Segmented glass tab control to target `Breakfast`, `Lunch`, `Dinner`, or `Snacks` (defaults automatically based on the user’s local time of day on load).
-- **Plain-Language AI Parser**: Sends natural descriptions (e.g., *"two eggs, a slice of buttered toast, and a black coffee"*) to `POST /api/parse-meal`. Gemini returns structured items with `name`, `portion`, `calories`, `protein`, `carbs`, and `fat`.
-- **Glass Confirmation Card**: Before committing items to the daily log, users review them in an elevated glass card where every item’s name, portion, calories, and macros can be edited inline, individual items can be deleted, custom blank rows can be added, and the live meal total is previewed.
-- **Quick-Add Chips**: A horizontal scrollable row of recent and frequently logged foods (`QuickFoodTemplate[]`), ranked dynamically by usage frequency and recency. Tapping a chip logs the food immediately (or appends it to the open confirmation card if one is active).
+### 2.3. 7-Day Pill-Bar Trend Chart (`WeeklyChartCard.tsx`)
+- **Pill-Bar Visualization**: Computes a rolling 7-day window ending on `selectedDate` and renders rounded vertical pill bars against a dashed horizontal target reference line.
+- **Active Day Highlight**: The bar matching `selectedDate` is highlighted in charcoal (`#71717A`) with hover tooltips displaying exact caloric intake.
+- **7-Day Rolling Average**: Automatically calculates average daily caloric intake and compares it against the target goal.
 
-### 2.4. Grouped Daily Meals (`MealGroupsSection.tsx`)
-- **Four Meal Containers**: Displays the selected date’s logged items grouped into **Breakfast**, **Lunch**, **Dinner**, and **Snacks** in a 2-column desktop / 1-column mobile grid.
-- **Per-Meal Totals & Inline CRUD**: Each card computes its own calorie and macro subtotals (`P · C · F`) and allows users to edit any logged food item inline or delete it immediately. Each card also includes a **Log to [Meal]** shortcut that scrolls to and focuses the natural-language input bar.
+### 2.4. Interactive Mini Calendar & Adherence Ring (`CalendarCard.tsx`)
+- **5-Day Calendar Strip**: Displays `< Month Year >` navigation with previous/next controls and day buttons (`Tue 17`, `Wed 18`, `[Thu 19]`). Active day is highlighted as an elevated charcoal pill.
+- **Circular Adherence Ring**: Animated circular SVG progress gauge displaying the percentage completion of daily nutrition goals (`65%`) and pacing indicators.
 
-### 2.5. AI Daily Insights (`AiInsightsCard.tsx`)
-- **Contextual Coaching**: Calls `POST /api/daily-insight` with the user’s goal, daily targets, current intake totals, and logged meals for the selected date.
-- **Output & One-Tap Action**: Renders a friendly 1–2 sentence summary of the day so far alongside a concrete next-meal suggestion tailored to the user’s remaining calories and macros. Includes a one-tap **Analyze “[Suggested Meal]”** button that stages the suggested meal directly into the AI meal parser.
-- **Caching**: Caches generated insights per date (`insightsByDate[YYYY-MM-DD]`) in `localStorage` and provides a manual **Refresh Insight** button.
+### 2.5. AI Daily Insights & Coaching (`AiInsightsCard.tsx`)
+- **Contextual Coaching**: Calls `POST /api/daily-insight` powered by Gemini 3.8 Flash, evaluating the selected day's meals and remaining macronutrient budget.
+- **Recommended Next Meal Well**: Suggests a specific meal tailored to remaining macros (e.g. *"Grilled Chicken Breast with Sweet Potato"*).
+- **One-Tap Staging**: Includes a **"Stage to Logger"** button that automatically pre-populates the suggestion into the natural-language logger.
+- **Resilience**: Shimmer skeleton loading state during generation and smart algorithmic fallbacks if offline.
 
-### 2.6. Weekly View & Historical Date Lookback (`WeeklyViewSection.tsx` & `App.tsx`)
-- **Smooth 7-Day Calorie Chart**: Computes a 7-day window ending on `selectedDate` and renders a cubic-bezier smooth SVG curve + gradient area fill against a dashed horizontal target line. Clicking any day node switches `selectedDate` to inspect or edit that day’s meals.
-- **Average Macro Split**: Calculates 7-day average daily calories and macro grams (`Protein`, `Carbs`, `Fat`) alongside a proportional caloric split bar (`% Protein`, `% Carbs`, `% Fat`).
-- **Date Navigation**: Users can look back at any previous day via the top horizontal 7-day scroller, previous/next day chevrons, native date pickers, or a **Jump to Today** button.
+### 2.6. Natural-Language Meal Logger (`NaturalLanguageLogger.tsx`)
+- **Time-of-Day Category Tabs**: Segmented tabs for `Breakfast`, `Lunch`, `Dinner`, and `Snacks` (defaults automatically based on current local hour).
+- **Gemini AI Parser**: Natural descriptions sent to `POST /api/parse-meal` return structured items with `name`, `portion`, `calories`, `protein`, `carbs`, and `fat`.
+- **Pre-Commit Review Card**: Interactive confirmation drawer where users can adjust item names, portions, calories, or macros inline, delete items, add custom blank rows, and preview live meal totals.
+- **Quick-Add Chips**: Horizontally scrollable row of frequently and recently logged foods for 1-tap logging.
+
+### 2.7. Grouped Daily Meals Table (`MealGroupsSection.tsx`)
+- **Structured Table Layout**: Clean tabular feed displaying `Food Item` (with category icon & portion), `Category`, `Macronutrients` (`P · C · F`), `Calories` (`320 kcal`), and `Status / Actions` (charcoal `Logged` badge, inline edit, delete).
+- **Category Filter**: Filter tabs for `All`, `Breakfast`, `Lunch`, `Dinner`, and `Snacks`.
+
+### 2.8. Onboarding & Target Recalibration Modal (`OnboardingModal.tsx`)
+- **Trigger**: Launches automatically on first visit (`!state.onboarded`) or manually via the sidebar card, top avatar, or hero card.
+- **Live Unit Switcher**: Metric (`cm` / `kg`) $\leftrightarrow$ Imperial (`ft + in` / `lbs`) with live bidirectional conversion.
+- **AI Target Calculation**: Sends biometrics and goals to `POST /api/calculate-targets` with spinner feedback and automatic fallback to the scientific **Mifflin-St Jeor formula**.
+- **Manual Customization**: Lets users fine-tune individual targets and includes a one-click **"Sync Calories to Macros"** helper (`4·P + 4·C + 9·F`).
 
 ---
 
 ## 3. Extending the State Management System
 
-All persistent client state is centralized in `FlowStorageState` (`src/types.ts`), hydrated and saved via `src/utils/storage.ts`, and orchestrated in `src/App.tsx`.
+Persistent state is managed in `FlowStorageState` (`src/types.ts`), persisted in `localStorage` under `PRIMARY_STORAGE_KEY` (`fiova_nutrition_state_v1`), and orchestrated in `src/App.tsx`.
 
-### Step 1: Define New Types in `src/types.ts`
-When adding a new feature domain (for example, daily hydration tracking or workout logs), first define the data interface and attach it to `FlowStorageState`:
+### Step 1: Define New Domain Models in `src/types.ts`
+When introducing a new feature (e.g., daily hydration or workout tracking):
 
 ```ts
 // src/types.ts
@@ -91,41 +104,32 @@ export interface FlowStorageState {
   logsByDate: Record<string, FoodItem[]>;
   insightsByDate: Record<string, DailyInsight>;
   quickFoods: QuickFoodTemplate[];
-  // New state slice keyed by YYYY-MM-DD:
+  // New slice keyed by YYYY-MM-DD:
   hydrationByDate?: Record<string, HydrationEntry[]>;
 }
 ```
 
-### Step 2: Update Hydration & Defaults in `src/utils/storage.ts`
-Ensure `loadFlowState()` safely defaults your new property so existing users with older `localStorage` payloads do not encounter `undefined` errors:
+### Step 2: Hydration & Defaulting in `src/utils/storage.ts`
+Ensure `loadFlowState()` provides a safe fallback:
 
 ```ts
-// Inside loadFlowState() in src/utils/storage.ts
+// src/utils/storage.ts
 return {
   onboarded: Boolean(parsed.onboarded),
-  profile: parsed.profile,
-  targets: parsed.targets,
+  profile: parsed.profile || DEFAULT_PROFILE,
+  targets: parsed.targets || calculateLocalFallbackTargets(parsed.profile),
   logsByDate: parsed.logsByDate || {},
   insightsByDate: parsed.insightsByDate || {},
-  quickFoods:
-    Array.isArray(parsed.quickFoods) && parsed.quickFoods.length > 0
-      ? parsed.quickFoods
-      : DEFAULT_QUICK_FOODS,
-  hydrationByDate: parsed.hydrationByDate || {}, // Safe backward-compatible fallback
+  quickFoods: Array.isArray(parsed.quickFoods) ? parsed.quickFoods : DEFAULT_QUICK_FOODS,
+  hydrationByDate: parsed.hydrationByDate || {}, // Safe backward-compatible default
 };
 ```
-*Note: Only bump `STORAGE_KEY` (`flow_liquid_glass_state_v1`) if introducing a breaking schema change without a fallback migration.*
 
-### Step 3: Add Immutable Handlers in `src/App.tsx`
-`src/App.tsx` automatically persists `state` to `localStorage` via `useEffect(() => saveFlowState(state), [state])`. Add immutable state updaters scoped by `selectedDate`:
+### Step 3: State Mutation Handlers in `src/App.tsx`
+`App.tsx` automatically persists changes via `useEffect(() => saveFlowState(state), [state])`. Add immutable state updaters:
 
 ```ts
-const currentDayHydration = useMemo(
-  () => state.hydrationByDate?.[selectedDate] || [],
-  [state.hydrationByDate, selectedDate]
-);
-
-const handleAddHydration = (amountMl: number) => {
+const handleAddWater = (amountMl: number) => {
   setState((prev) => {
     const existing = prev.hydrationByDate?.[selectedDate] || [];
     const nextEntry: HydrationEntry = {
@@ -144,114 +148,19 @@ const handleAddHydration = (amountMl: number) => {
 };
 ```
 
-### Step 4: Adding New Gemini AI Endpoints in `server.ts`
-1. Never import `@google/genai` in client code (`src/*`).
-2. Add a new `app.post("/api/your-endpoint", ...)` route in `server.ts` using `getGenAIClient()`.
-3. Use `model: "gemini-3.8-flash"` with `responseMimeType: "application/json"` and an explicit `responseSchema` using `Type.OBJECT` / `Type.ARRAY`.
-
 ---
 
-## 4. Adding New UI Sections in the iOS 26 Liquid Glass Design Language
+## 4. Design System Tokens & Styling Classes
 
-Every new component in `src/components/` must follow Flow’s material hierarchy, typography, and motion rules defined in `src/index.css`.
+All UI elements adhere to the soft-clay / slate dashboard design system defined in `src/index.css`:
 
-### 4.1. Material Hierarchy & Surface Classes
-Use the pre-built CSS classes in `src/index.css` rather than ad-hoc opaque backgrounds:
-
-| Class Name | Intended Usage | Visual Characteristics |
-| :--- | :--- | :--- |
-| `.liquid-glass` | Primary top-level section cards (`<section>`) | `backdrop-blur(28px) saturate(190%)`, translucent white gradient (`0.72` → `0.48`), `1px` bright edge highlight (`rgba(255,255,255,0.82)`), inner specular glow, layered ambient shadow |
-| `.liquid-glass-elevated` | Modals, confirmation drawers, floating popovers | Stronger blur (`36px`), higher opacity (`0.84` → `0.62`), deeper elevation shadow |
-| `.liquid-glass-subtle` | Inner list rows, stat wells, segmented control tracks | Lighter blur (`20px`), softer translucency (`0.58` → `0.36`), subtle `1px` border |
-| `.liquid-input` | Text inputs, number inputs, date pickers | Translucent input surface that brightens and adds a soft sky-blue focus halo (`0 0 0 3px rgba(56,189,248,0.22)`) on `:focus-within` |
-| `.liquid-button-primary` | Primary CTA buttons | Deep slate translucent glass with top inner specular edge and lift-on-hover + `scale(0.98)` press feedback |
-| `.liquid-button-secondary` | Secondary actions, chips, icon buttons | Frosted white glass button with bright border and subtle hover lift |
-
-### 4.2. Corner Radii & Spatial Math
-- **Outer Section Containers**: Always use `rounded-[32px]` (or `rounded-[28px]` for medium grid cards) with `p-6 sm:p-8` padding.
-- **Nested Inner Surfaces**: Follow nested radius math ($r_{\text{inner}} = r_{\text{outer}} - \text{padding}$). Inside a `rounded-[32px]` section, use `rounded-3xl` (`24px`) or `rounded-2xl` (`16px`) for `.liquid-glass-subtle` child rows.
-- **Single-Level Card Elevation**: Avoid stacking heavy drop-shadow cards inside cards. Place `.liquid-glass-subtle` items inside a `.liquid-glass` section.
-
-### 4.3. Typography & Numeric Discipline
-- **Font Pairing**: `Plus Jakarta Sans` (with system `-apple-system, BlinkMacSystemFont` fallback) is used for headings and prose; `JetBrains Mono` is used for telemetry and chart axes.
-- **Tabular Numerals**: Always apply `tabular-nums` (`font-variant-numeric: tabular-nums`) to any element displaying calories, grams, percentages, or dates so numbers align vertically and never jitter during animations.
-- **Zero-Pill Metadata**: Render static metadata (such as macro breakdowns `24g P · 34g C · 19g F` or timestamps) as clean inline text separated by middle dots (`<span aria-hidden="true">·</span>`), reserving button/chip enclosures strictly for interactive controls.
-
-### 4.4. Spring Animations & Loading / Error States
-- **Spring Physics**: Use `motion` from `"motion/react"` for interactive transitions and progress indicators:
-  ```tsx
-  transition={{ type: "spring", stiffness: 300, damping: 26 }}
-  ```
-- **Touch Hitboxes**: Ensure all interactive buttons, chips, and icon controls maintain at least `min-h-[40px]` to `min-h-[48px]` for mobile ergonomics.
-- **AI Loading & Retry Pattern**: Every AI-driven section must include:
-  1. A frosted shimmer skeleton (`bg-white/55 border border-white/80 animate-pulse`) while awaiting a response.
-  2. A friendly `.liquid-glass-subtle` error banner with a clear explanation and an interactive **Try Again** button if the request fails.
-
-### 4.5. Blueprint for a New Liquid Glass Section Component
-
-```tsx
-import React from "react";
-import { motion } from "motion/react";
-import { Droplets, Plus } from "lucide-react";
-
-export const HydrationSection: React.FC<{
-  totalMl: number;
-  targetMl: number;
-  onAddWater: (ml: number) => void;
-}> = ({ totalMl, targetMl, onAddWater }) => {
-  const pct = Math.min(100, Math.round((totalMl / Math.max(1, targetMl)) * 100));
-
-  return (
-    <section
-      id="hydration-section"
-      className="rounded-[32px] liquid-glass p-6 sm:p-7 space-y-4 relative overflow-hidden"
-    >
-      {/* Optional ambient internal refraction blob */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-sky-300/25 blur-3xl"
-      />
-
-      <div className="relative flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
-            <Droplets className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-              Daily Hydration
-            </h2>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 tabular-nums">
-              <span>{totalMl} ml</span>
-              <span aria-hidden="true">·</span>
-              <span>Target {targetMl} ml</span>
-              <span aria-hidden="true">·</span>
-              <span className="text-sky-700 font-semibold">{pct}%</span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onAddWater(250)}
-          className="min-h-[42px] px-4 py-2 rounded-2xl liquid-button-secondary text-xs font-semibold text-slate-800 flex items-center gap-1.5 whitespace-nowrap shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5 text-sky-600" />
-          <span>+250 ml</span>
-        </button>
-      </div>
-
-      <div className="rounded-2xl liquid-glass-subtle p-4">
-        <div className="h-3.5 w-full rounded-full bg-sky-950/8 p-0.5 overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ type: "spring", stiffness: 110, damping: 20 }}
-            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 relative"
-          />
-        </div>
-      </div>
-    </section>
-  );
-};
-```
+| Utility Class | Purpose & Characteristics |
+| :--- | :--- |
+| `body` / Canvas | `#EAE8ED` soft-clay backdrop with antialiased typography |
+| `.card-white` | Pure white pill cards (`rounded-[26px]`) with soft ambient diffuse shadow (`0 4px 20px -2px rgba(24, 24, 27, 0.04)`) |
+| `.card-dark` | Standout dark graphite pill card (`linear-gradient(145deg, #1C1B20, #121215)`) with specular border highlight |
+| `.card-dark-gradient` | Subtle dark gradient for sidebar callouts |
+| `.pill-tab` | Pill tabs for navigation and period switchers |
+| `.pill-tab-dark` | Active charcoal pill indicator (`#18181B`) with white text |
+| `.input-soft` | Pill-shaped text input bar with subtle shadow and border focus |
+| `.tabular-nums` | Monospaced numeric alignment for metrics, grams, and percentages |
