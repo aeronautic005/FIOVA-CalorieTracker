@@ -13,6 +13,8 @@ import {
   FoodItem,
   QuickFoodTemplate,
   MealCategory,
+  UserProfile,
+  NutritionTargets,
 } from './types';
 import { Sidebar } from './components/Sidebar';
 import { TopHeader } from './components/TopHeader';
@@ -22,6 +24,7 @@ import { CalendarCard } from './components/CalendarCard';
 import { AiInsightsCard } from './components/AiInsightsCard';
 import { NaturalLanguageLogger } from './components/NaturalLanguageLogger';
 import { MealGroupsSection } from './components/MealGroupsSection';
+import { OnboardingModal } from './components/OnboardingModal';
 
 export default function App() {
   const [state, setState] = useState<FlowStorageState>(() => loadFlowState());
@@ -29,7 +32,7 @@ export default function App() {
   const [periodView, setPeriodView] = useState<PeriodView>('Month');
   const [activeNav, setActiveNav] = useState<string>('Dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState<boolean>(false);
+  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState<boolean>(() => !state.onboarded);
   const [stagedMealQuery, setStagedMealQuery] = useState<string>('');
 
   // Persist state changes to localStorage
@@ -135,6 +138,15 @@ export default function App() {
     });
   };
 
+  const handleSaveProfileAndTargets = (newProfile: UserProfile, newTargets: NutritionTargets) => {
+    setState((prev) => ({
+      ...prev,
+      onboarded: true,
+      profile: newProfile,
+      targets: newTargets,
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-[#EAE8ED] flex text-slate-900 antialiased font-sans">
       {/* Left Sidebar */}
@@ -213,7 +225,7 @@ export default function App() {
           onClearExternalQuery={() => setStagedMealQuery('')}
         />
 
-        {/* Row 5: Grouped Daily Meals Table (Mockup Bottom Table) */}
+        {/* Row 5: Grouped Daily Meals Table */}
         <MealGroupsSection
           items={currentDayMeals}
           onDeleteItem={handleDeleteItem}
@@ -221,6 +233,15 @@ export default function App() {
           selectedDate={selectedDate}
         />
       </div>
+
+      {/* Onboarding & Goals Adjustment Modal */}
+      <OnboardingModal
+        isOpen={isGoalsModalOpen}
+        onClose={() => setIsGoalsModalOpen(false)}
+        currentProfile={state.profile}
+        currentTargets={state.targets}
+        onSave={handleSaveProfileAndTargets}
+      />
     </div>
   );
 }
