@@ -5,7 +5,6 @@ import {
   Sparkles,
   BarChart3,
   Settings,
-  HelpCircle,
   RotateCcw,
   Flame,
   ChevronRight,
@@ -51,15 +50,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
+      {/* Sticky Fixed-Height Sidebar: Never scrolls away with the page */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-r border-slate-200/60 lg:border-none p-5 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:static'
+        className={`fixed top-0 bottom-0 left-0 z-40 w-64 h-screen bg-white/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-r border-slate-200/60 lg:border-none p-5 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 overflow-y-auto scrollbar-none ${
+          mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
         <div>
           {/* Brand Header */}
-          <div className="flex items-center gap-2.5 px-3 py-2 mb-7">
-            <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-md">
+          <div className="flex items-center gap-2.5 px-2 py-1 mb-5">
+            <div className="w-9 h-9 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-md shrink-0">
               <Flame className="w-5 h-5 text-amber-400 fill-amber-400" />
             </div>
             <div>
@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Navigation Links */}
-          <nav className="space-y-1.5">
+          <nav className="space-y-1">
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeNav === item.id;
@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectNav(item.id);
                     onCloseMobile();
                   }}
-                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200 text-left cursor-pointer ${
                     isActive
                       ? 'bg-white text-slate-900 shadow-sm border border-slate-100'
                       : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
@@ -105,10 +105,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Lower Section */}
-        <div className="space-y-5 pt-4">
-          {/* Pro / Nutrition Targets Card (Mockup Upgrade Card) */}
-          <div className="card-dark p-4.5 relative overflow-hidden">
+        {/* Lower Section (Target Calibrated Card & Settings) - Always visible in viewport */}
+        <div className="space-y-3 pt-3">
+          {/* Target Calibrated Dark Pill Card */}
+          <div className="card-dark p-4 relative overflow-hidden">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-emerald-400" />
@@ -131,10 +131,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Secondary Links */}
-          <div className="space-y-1 border-t border-slate-200/60 pt-3">
+          <div className="space-y-0.5 border-t border-slate-200/60 pt-2">
             <button
               onClick={onOpenGoalsModal}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-white/60 transition-colors text-left cursor-pointer"
             >
               <Settings className="w-4 h-4 text-slate-400" />
               <span>Settings & Profile</span>
@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onResetData();
                 }
               }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-50/60 transition-colors text-left cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-50/60 transition-colors text-left cursor-pointer"
             >
               <RotateCcw className="w-4 h-4 text-rose-400" />
               <span>Reset Demo State</span>
